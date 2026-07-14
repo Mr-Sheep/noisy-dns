@@ -5,6 +5,27 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::PathBuf;
 
+/// Strips a leading "http://"/"https://" scheme and any trailing slashes
+fn normalize_domain(field: &str) -> Option<String> {
+    let lower = field.to_ascii_lowercase();
+    let without_scheme = lower
+        .strip_prefix("https://")
+        .or_else(|| lower.strip_prefix("http://"))
+        .unwrap_or(&lower);
+
+    let domain = without_scheme.trim_end_matches(['/', '\\']).to_string();
+
+    if domain.is_empty() {
+        return None;
+    }
+ 
+    let looks_like_domain = domain
+        .chars()
+        .all(|c: char| c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_');
+ 
+    looks_like_domain.then_some(domain)
+}
+
 fn sample_domains(
     path: &PathBuf,
     sample_size: usize,
@@ -23,25 +44,23 @@ fn sample_domains(
             continue;
         }
 
-        let field = line.rsplit(',').next().unwrap_or("").trim();
-        if field.is_empty() {
+        let raw = line.rsplit(',').next().unwrap_or("").trim();
+        if raw.is_empty() {
             eprintln!("noisy: skipping malformed line {}: {:?}", line_no + 1, line);
             continue;
         }
 
-        let looks_like_domain = field
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_');
-        if !looks_like_domain {
-            eprintln!(
-                "noisy: skipping invalid domain on line {}: {:?}",
-                line_no + 1,
-                field
-            );
-            continue;
-        }
-
-        let domain = field.to_ascii_lowercase();
+        let domain = match normalize_domain(raw) {
+            Some(d) => d,
+            None => {
+                eprintln!(
+                    "noisy: skipping invalid domain on line {}: {:?}",
+                    line_no + 1,
+                    raw
+                );
+                continue;
+            }
+        };
 
         // Reservoir sampling (Algorithm R): the first `sample_size` valid
         // domains fill the reservoir directly. After that, each new item
