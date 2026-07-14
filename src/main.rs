@@ -18,12 +18,12 @@ struct Args {
     resolver: String,
 
     // minimum delay between each queries
-    #[arg(long, default_value_t = 500)]
-    min_delay_ms: u64,
+    #[arg(long, default_value_t = 5000)]
+    min_delay: u64,
 
     // maximum delay between each queries
-    #[arg(long, default_value_t = 1000)]
-    max_delay_ms: u64,
+    #[arg(long, default_value_t = 10000)]
+    max_delay: u64,
 
     #[arg(short, long, default_value_t = false)]
     verbose: bool,
@@ -88,7 +88,7 @@ fn main() -> std::io::Result<()> {
         }
 
         sent += 1;
-        let delay = dns::next_delay(&mut rng, args.min_delay_ms, args.max_delay_ms);
+        let delay = dns::next_delay(&mut rng, args.min_delay, args.max_delay);
         std::thread::sleep(delay);
     }
 }

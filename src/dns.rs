@@ -6,8 +6,6 @@ use rand::seq::IndexedRandom;
 pub const QTYPES: &[(u16, &str)] = &[
     (1, "A"),
     (28, "AAAA"),
-    (16, "TXT"),
-    (15, "MX"),
     (2, "NS"),
     (5, "CNAME"),
 ];
