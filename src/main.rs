@@ -36,6 +36,9 @@ struct Args {
 
     #[arg(long, default_value_t = 0)]
     resample_interval: u64,
+
+    #[arg(long, default_value_t = false)]
+    random_prefix: bool
 }
 
 fn main() -> std::io::Result<()> {
@@ -68,7 +71,7 @@ fn main() -> std::io::Result<()> {
             }
         }
 
-        let (qname, qtype, qtype_name) = dns::pick_query(&mut rng, &pool);
+        let (qname, qtype, qtype_name) = dns::pick_query(&mut rng, &pool, args.random_prefix);
         let packet = dns::build_query(&mut rng, &qname, qtype);
 
         match socket.send_to(&packet, &args.resolver) {

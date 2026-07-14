@@ -21,31 +21,54 @@ fn random_label(rng: &mut impl RngExt, len: usize) -> String {
 
 // forcing known txt records to be txt records
 const FORCED_TXT_PREFIXES: &[&str] = &["_domainkey", "_dmarc"];
- 
+
 fn is_forced_txt(domain: &str) -> bool {
     FORCED_TXT_PREFIXES
         .iter()
         .any(|prefix| domain.contains(prefix))
 }
 
-pub fn pick_query(rng: &mut impl RngExt, pool: &[String]) -> (String, u16, &'static str) {
+fn is_a(domain: &str) -> bool {
+    domain.ends_with("in-addr.arpa")
+}
+
+fn is_aaaa(domain: &str) -> bool {
+    domain.ends_with("ip6.arpa")
+}
+
+pub fn pick_query(
+    rng: &mut impl RngExt,
+    pool: &[String],
+    random_prefix: bool,
+) -> (String, u16, &'static str) {
     let base = pool.choose(rng).expect("domain pool must not be empty");
- 
+
     if is_forced_txt(base) {
         return (base.clone(), 16, "TXT");
     }
- 
-    let qname = if rng.random_bool(0.5) {
-        base.clone()
+
+    if is_a(base) {
+        return (base.clone(), 1, "A");
+    }
+
+    if is_aaaa(base) {
+        return (base.clone(), 28, "AAAA");
+    }
+
+    let qname = if random_prefix {
+        if rng.random_bool(0.5) {
+            base.clone()
+        } else {
+            let label_len = rng.random_range(3..12);
+            format!("{}.{}", random_label(rng, label_len), base)
+        }
     } else {
-        let label_len = rng.random_range(3..12);
-        format!("{}.{}", random_label(rng, label_len), base)
+        base.clone()
     };
- 
+
     let (qtype, qtype_name) = *QTYPES.choose(rng).unwrap();
     (qname, qtype, qtype_name)
 }
-
 
 /// Encodes a domain name into DNS wire format (length-prefixed labels).
 fn encode_qname(name: &str) -> Vec<u8> {
