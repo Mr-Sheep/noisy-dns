@@ -13,7 +13,7 @@ fn normalize_domain(field: &str) -> Option<String> {
         .or_else(|| lower.strip_prefix("http://"))
         .unwrap_or(&lower);
 
-    let domain = without_scheme.trim_end_matches(['/', '\\']).to_string();
+    let domain = without_scheme.trim_end_matches(['/', '\\', '"']).to_string();
 
     if domain.is_empty() {
         return None;
